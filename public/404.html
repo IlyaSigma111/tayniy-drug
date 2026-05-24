@@ -6,9 +6,13 @@
     <title>Письмо от тайного друга</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>" />
     <script>
-      sessionStorage.redirect = location.href;
+      (function() {
+        var segment = location.pathname.replace(/^\/tayniy-drug/, '') || '/';
+        sessionStorage.setItem('redirect', segment);
+      })();
     </script>
-    <meta http-equiv="refresh" content="0;URL='index.html'">
   </head>
-  <body></body>
+  <body>
+    <script>location.replace('/tayniy-drug/');</script>
+  </body>
 </html>

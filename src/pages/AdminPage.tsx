@@ -1,20 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import {
-  collection, getDocs, doc, getDoc, setDoc, writeBatch, Timestamp
-} from 'firebase/firestore'
-import { signOut } from 'firebase/auth'
-import { auth, db } from '../lib/firebase'
+import { useState, useEffect } from 'react'
+import { collection, getDocs, doc, setDoc, writeBatch, Timestamp } from 'firebase/firestore'
+import { db } from '../lib/firebase'
+
+const ADMIN_PASSWORD = 'admin123'
 
 interface UserProfile {
   id: string
-  email: string
   fullName: string
   region: string
   bio: string
-  photoUrl: string
-  createdAt: Timestamp | null
 }
 
 interface Assignment {
@@ -24,51 +18,43 @@ interface Assignment {
 }
 
 export default function AdminPage() {
-  const { user } = useAuth()
-  const navigate = useNavigate()
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem('admin_auth') === 'true')
+  const [password, setPassword] = useState('')
+  const [pwError, setPwError] = useState('')
 
   const [users, setUsers] = useState<UserProfile[]>([])
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [loading, setLoading] = useState(true)
   const [distributing, setDistributing] = useState(false)
   const [msg, setMsg] = useState('')
-  const [isAdmin, setIsAdmin] = useState(false)
 
-  const checkAdmin = useCallback(async () => {
-    if (!user) return
-    const ref = doc(db, 'admins', user.uid)
-    const snap = await getDoc(ref)
-    if (!snap.exists()) {
-      navigate('/dashboard')
+  function handleLogin() {
+    if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem('admin_auth', 'true')
+      setAuthed(true)
+      setPwError('')
     } else {
-      setIsAdmin(true)
+      setPwError('Неверный пароль')
     }
-  }, [user, navigate])
+  }
 
   useEffect(() => {
-    checkAdmin()
-    loadData()
-  }, [user])
+    if (authed) loadData()
+  }, [authed])
 
   async function loadData() {
-    if (!user) return
     setLoading(true)
     try {
-      // Load all profiles
       const profSnap = await getDocs(collection(db, 'profiles'))
       const profileList: UserProfile[] = []
-      profSnap.forEach(d => {
-        profileList.push({ id: d.id, ...d.data() } as UserProfile)
-      })
+      profSnap.forEach(d => profileList.push({ id: d.id, ...d.data() } as UserProfile))
       setUsers(profileList)
 
-      // Load assignments
       const assignSnap = await getDocs(collection(db, 'assignments'))
       const assignList: Assignment[] = []
       assignSnap.forEach(d => {
         assignList.push({ userId: d.id, ...d.data() } as Assignment)
       })
-      // Fill names
       for (const a of assignList) {
         const prof = profileList.find(p => p.id === a.assignedTo)
         a.assignedToName = prof?.fullName || 'Неизвестно'
@@ -86,48 +72,24 @@ export default function AdminPage() {
     setMsg('')
     try {
       const ids = users.map(u => u.id)
-      // Fisher-Yates shuffle
       const shuffled = [...ids]
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
       }
 
-      // Create pairs ensuring no self-assignment and no mutual assignments
-      // Simple approach: shift by 1
       const pairs: { from: string; to: string }[] = []
       for (let i = 0; i < shuffled.length; i++) {
-        const from = shuffled[i]
-        const to = shuffled[(i + 1) % shuffled.length]
-        pairs.push({ from, to })
+        pairs.push({ from: shuffled[i], to: shuffled[(i + 1) % shuffled.length] })
       }
 
-      // Verify no mutual assignments (A->B and B->A)
-      // This simple shift approach guarantees no mutual pairs and no self-assignment
-      const pairSet = new Set(pairs.map(p => `${p.from}-${p.to}`))
-      let hasMutual = false
-      for (const p of pairs) {
-        if (pairSet.has(`${p.to}-${p.from}`)) { hasMutual = true; break }
-      }
-
-      if (hasMutual) {
-        setMsg('Обнаружены взаимные назначения, перезапустите распределение')
-        setDistributing(false)
-        return
-      }
-
-      // Save assignments
       const batch = writeBatch(db)
       for (const p of pairs) {
         const ref = doc(db, 'assignments', p.from)
-        batch.set(ref, {
-          assignedTo: p.to,
-          createdAt: Timestamp.now(),
-        })
+        batch.set(ref, { assignedTo: p.to, createdAt: Timestamp.now() })
       }
       await batch.commit()
 
-      // Set distribution flag
       await setDoc(doc(db, 'settings', 'distribution'), {
         done: true,
         date: Timestamp.now(),
@@ -141,15 +103,28 @@ export default function AdminPage() {
     setDistributing(false)
   }
 
-  async function handleLogout() {
-    await signOut(auth)
-    navigate('/')
-  }
-
-  if (!isAdmin) {
+  if (!authed) {
     return (
       <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--text-muted)' }}>Проверка доступа...</p>
+        <div className="card" style={{ width: '100%', maxWidth: 380 }}>
+          <h1 className="card-title">Админ-панель</h1>
+          {pwError && <div className="alert alert-error">{pwError}</div>}
+          <div className="form-group">
+            <label>Пароль</label>
+            <input
+              className="input"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              placeholder="Введите пароль"
+              autoFocus
+            />
+          </div>
+          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleLogin}>
+            Войти
+          </button>
+        </div>
       </div>
     )
   }
@@ -157,11 +132,10 @@ export default function AdminPage() {
   return (
     <div className="page">
       <header className="header">
-        <Link to="/" className="logo">Тайный друг</Link>
+        <span className="logo">Тайный друг — Админ</span>
         <div className="header-actions">
-          <Link to="/dashboard" className="btn" style={{ fontSize: 13 }}>Кабинет</Link>
-          <span style={{ fontSize: 12, color: 'var(--warning)' }}>Админ</span>
-          <button className="btn btn-danger" style={{ fontSize: 13 }} onClick={handleLogout}>Выйти</button>
+          <button className="btn" style={{ fontSize: 13 }} onClick={() => loadData()} disabled={loading}>Обновить</button>
+          <button className="btn btn-danger" style={{ fontSize: 13 }} onClick={() => { sessionStorage.removeItem('admin_auth'); setAuthed(false) }}>Выйти</button>
         </div>
       </header>
 
@@ -171,16 +145,12 @@ export default function AdminPage() {
         )}
 
         <div className="dashboard-grid">
-          {/* Admin Panel */}
           <div className="card">
             <div className="section-header">
-              <h2 className="card-title" style={{ margin: 0 }}>Админ-панель</h2>
-              <button className="btn" style={{ fontSize: 13 }} onClick={loadData} disabled={loading}>
-                {loading ? '...' : 'Обновить'}
-              </button>
+              <h2 className="card-title" style={{ margin: 0 }}>Управление</h2>
             </div>
             <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 16 }}>
-              Всего участников с анкетами: <strong style={{ color: 'var(--accent)' }}>{users.length}</strong>
+              Участников с анкетами: <strong style={{ color: 'var(--accent)' }}>{users.length}</strong>
             </p>
             {assignments.length === 0 ? (
               <button className="btn btn-primary" onClick={runDistribution} disabled={distributing || users.length < 2}>
@@ -188,7 +158,7 @@ export default function AdminPage() {
               </button>
             ) : (
               <div className="alert alert-info">
-                Распределение уже выполнено ({assignments.length} участников распределено).
+                Распределение выполнено ({assignments.length} участников).
                 <br />
                 <button className="btn" style={{ fontSize: 13, marginTop: 8 }} onClick={runDistribution} disabled={distributing}>
                   Перераспределить
@@ -197,7 +167,6 @@ export default function AdminPage() {
             )}
           </div>
 
-          {/* Users List */}
           <div className="card">
             <h2 className="card-title">Участники ({users.length})</h2>
             <div style={{ overflowX: 'auto' }}>
@@ -206,19 +175,19 @@ export default function AdminPage() {
                   <tr style={{ borderBottom: '1px solid var(--accent-border)' }}>
                     <th style={{ padding: '8px 10px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>ФИО</th>
                     <th style={{ padding: '8px 10px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Регион</th>
-                    <th style={{ padding: '8px 10px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Email</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>UID</th>
                     <th style={{ padding: '8px 10px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Назначен</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map(u => {
-                    const assigned = assignments.find(a => a.userId === u.id)
+                    const a = assignments.find(x => x.userId === u.id)
                     return (
                       <tr key={u.id} style={{ borderBottom: '1px solid var(--accent-border)' }}>
                         <td style={{ padding: '10px', color: 'var(--text-primary)', fontWeight: 600 }}>{u.fullName}</td>
                         <td style={{ padding: '10px', color: 'var(--text-secondary)' }}>{u.region || '—'}</td>
-                        <td style={{ padding: '10px', color: 'var(--text-secondary)', fontSize: 12 }}>{u.id}</td>
-                        <td style={{ padding: '10px', color: 'var(--accent)' }}>{assigned ? assigned.assignedToName : '—'}</td>
+                        <td style={{ padding: '10px', color: 'var(--text-secondary)', fontSize: 12 }}>{u.id.slice(0, 12)}...</td>
+                        <td style={{ padding: '10px', color: 'var(--accent)' }}>{a ? a.assignedToName : '—'}</td>
                       </tr>
                     )
                   })}
@@ -227,7 +196,6 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Assignments Table */}
           {assignments.length > 0 && (
             <div className="card">
               <h2 className="card-title">Назначения</h2>
@@ -241,10 +209,10 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {assignments.map(a => {
-                      const fromUser = users.find(u => u.id === a.userId)
+                      const from = users.find(u => u.id === a.userId)
                       return (
                         <tr key={a.userId} style={{ borderBottom: '1px solid var(--accent-border)' }}>
-                          <td style={{ padding: '10px', color: 'var(--text-primary)', fontWeight: 600 }}>{fromUser?.fullName || 'Неизвестно'}</td>
+                          <td style={{ padding: '10px', color: 'var(--text-primary)', fontWeight: 600 }}>{from?.fullName || 'Неизвестно'}</td>
                           <td style={{ padding: '10px', color: 'var(--accent)' }}>{a.assignedToName}</td>
                         </tr>
                       )
