@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { collection, getDocs, doc, setDoc, writeBatch, Timestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
-const ADMIN_PASSWORD = 'admin123'
+const ADMIN_PASSWORD = 'мухоморпоганка'
 
 interface UserProfile {
   id: string
