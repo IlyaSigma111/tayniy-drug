@@ -24,6 +24,10 @@ Thumbs.db
 firebase-debug.log
 firestore-debug.log
 
+# Service account keys (never commit!)
+service*.json
+*-service-account*.json
+
 # Logs
 *.log
 npm-debug.log*
