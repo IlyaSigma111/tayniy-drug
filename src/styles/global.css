@@ -34,7 +34,6 @@ body {
   background: var(--bg-primary);
   min-height: 100vh;
   color: var(--text-body);
-  transition: background 0.3s, color 0.3s;
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -314,21 +313,8 @@ body {
 
 /* Responsive */
 @media (max-width: 600px) {
-  .container { margin-top: 64px; padding: 0 8px; }
-  .card { padding: 16px; }
-  .header { padding: 8px 12px; }
-  .logo { font-size: 16px; }
-  .dashboard-grid { gap: 16px; }
-}
-
-@media (max-width: 480px) {
-  .container { margin-top: 60px; padding: 0 6px; }
-  .card { padding: 14px; border-radius: 12px; }
-  .header { padding: 8px 10px; }
-  .logo { font-size: 14px; letter-spacing: 1px; }
-  .btn { padding: 8px 14px; font-size: 13px; }
-  .dashboard-grid { gap: 12px; }
-  .input, .textarea { padding: 10px 12px; font-size: 13px; }
-  .avatar-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }
-  .avatar-option { font-size: 16px; }
+  .container { margin-top: 72px; padding: 0 12px; }
+  .card { padding: 20px; }
+  .header { padding: 10px 12px; }
+  .logo { font-size: 18px; letter-spacing: 2px; }
 }

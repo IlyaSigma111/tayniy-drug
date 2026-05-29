@@ -63,46 +63,11 @@ export default function DashboardPage() {
   const [attachments, setAttachments] = useState<string[]>([''])
   const [sendingLetter, setSendingLetter] = useState(false)
 
-  const THEMES = [
-    { id: 'blue', label: 'Синий' },
-    { id: 'red', label: 'Красный' },
-    { id: 'green', label: 'Зелёный' },
-    { id: 'white', label: 'Белый' },
-    { id: 'purple', label: 'Фиолетовый' },
-    { id: 'orange', label: 'Оранжевый' },
-    { id: 'cyan', label: 'Голубой' },
-    { id: 'gold', label: 'Золотой' },
-    { id: 'pink', label: 'Розовый' },
-    { id: 'teal', label: 'Бирюзовый' },
-    { id: 'lilac', label: 'Лиловый' },
-    { id: 'slate', label: 'Серый' },
-    { id: 'amber', label: 'Янтарный' },
-    { id: 'glass', label: 'Стекло' },
-    { id: 'victory', label: 'Победа' },
-  ]
-
-  const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem('app-theme') || 'blue')
-  const [themeOpen, setThemeOpen] = useState(false)
-
-  function changeTheme(themeId: string) {
-    setCurrentTheme(themeId)
-    document.documentElement.setAttribute('data-theme', themeId)
-    localStorage.setItem('app-theme', themeId)
-  }
-
   useEffect(() => {
     if (!user) return
     loadProfile()
     listenInbox()
   }, [user])
-
-  useEffect(() => {
-    const saved = localStorage.getItem('app-theme')
-    if (saved) {
-      setCurrentTheme(saved)
-      document.documentElement.setAttribute('data-theme', saved)
-    }
-  }, [])
 
   async function loadProfile() {
     if (!user) return
@@ -225,37 +190,10 @@ export default function DashboardPage() {
       <header className="header">
         <Link to="/" className="logo">Тайный друг</Link>
         <div className="header-actions">
-          <button className="btn" style={{ fontSize: 13 }} onClick={() => setThemeOpen(o => !o)}>🎨</button>
           <Link to="/dashboard" className="btn" style={{ fontSize: 13 }}>Кабинет</Link>
           <button className="btn btn-danger" style={{ fontSize: 13 }} onClick={handleLogout}>Выйти</button>
         </div>
       </header>
-
-      {themeOpen && (
-        <div style={{
-          position: 'fixed', top: 64, right: 20, zIndex: 99,
-          background: 'var(--bg-card)', border: '1px solid var(--accent-border)',
-          borderRadius: 16, padding: 20, width: 260,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
-        }}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-            <span style={{color:'var(--accent)',fontWeight:700,fontSize:15}}>Тема оформления</span>
-            <button onClick={()=>setThemeOpen(false)} style={{background:'none',border:'none',color:'var(--text-muted)',fontSize:20,cursor:'pointer'}}>×</button>
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6}}>
-            {THEMES.map(t => (
-              <button key={t.id} onClick={()=>changeTheme(t.id)}
-                style={{
-                  padding:'8px 4px', borderRadius:8, border: currentTheme===t.id ? '2px solid var(--accent)' : '2px solid var(--accent-border)',
-                  background: currentTheme===t.id ? 'var(--accent-mid)' : 'transparent',
-                  color: 'var(--text-body)', fontSize:12, fontWeight:500, cursor:'pointer',
-                  transition:'all 0.2s'
-                }}
-              >{t.label}</button>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="container">
         {msg && (
