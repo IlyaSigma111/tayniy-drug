@@ -1,7 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { AVATARS, getAvatar } from '../lib/avatars'
 import {
   doc, getDoc, setDoc, updateDoc, collection, query,
   where, addDoc, orderBy, serverTimestamp, Timestamp, onSnapshot
@@ -13,7 +12,7 @@ interface Profile {
   fullName: string
   region: string
   bio: string
-  avatarId: number
+  photoUrl: string
   createdAt: Timestamp | null
   updatedAt: Timestamp | null
 }
@@ -23,7 +22,7 @@ interface AssignedUser {
   fullName: string
   region: string
   bio: string
-  avatarId: number
+  photoUrl: string
 }
 
 interface Letter {
@@ -49,7 +48,7 @@ export default function DashboardPage() {
   const [fullName, setFullName] = useState('')
   const [region, setRegion] = useState('')
   const [bio, setBio] = useState('')
-  const [avatarId, setAvatarId] = useState(0)
+  const [photoUrl, setPhotoUrl] = useState('')
 
   // Distribution status
   const [distributionDone, setDistributionDone] = useState(false)
@@ -80,7 +79,7 @@ export default function DashboardPage() {
       setFullName(p.fullName || '')
       setRegion(p.region || '')
       setBio(p.bio || '')
-      setAvatarId(p.avatarId ?? 0)
+      setPhotoUrl(p.photoUrl || '')
     }
     // Check distribution
     const distRef = doc(db, 'assignments', user.uid)
@@ -93,7 +92,7 @@ export default function DashboardPage() {
         const pSnap = await getDoc(pRef)
         if (pSnap.exists()) {
           const ap = pSnap.data() as Profile
-          setAssignedUser({ id: assignedId, fullName: ap.fullName, region: ap.region, bio: ap.bio, avatarId: ap.avatarId ?? 0 })
+          setAssignedUser({ id: assignedId, ...ap })
         }
       }
     }
@@ -124,7 +123,7 @@ export default function DashboardPage() {
         fullName: fullName.trim(),
         region: region.trim(),
         bio: bio.trim(),
-        avatarId,
+        photoUrl: photoUrl.trim(),
         createdAt: profile?.createdAt || serverTimestamp() as any,
         updatedAt: serverTimestamp() as any,
       }
@@ -213,9 +212,7 @@ export default function DashboardPage() {
                 <p><strong style={{ color: 'var(--accent)' }}>ФИО:</strong> {profile.fullName}</p>
                 {profile.region && <p><strong style={{ color: 'var(--accent)' }}>Регион:</strong> {profile.region}</p>}
                 <p><strong style={{ color: 'var(--accent)' }}>Биография:</strong> {profile.bio}</p>
-                <div className="avatar-display" style={{ background: getAvatar(profile.avatarId).bg, width: 80, height: 80, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 12, fontSize: 32 }}>
-                  <span>{getAvatar(profile.avatarId).emoji}</span>
-                </div>
+                {profile.photoUrl && <img src={profile.photoUrl} alt="" style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', marginTop: 12, border: '2px solid var(--accent-border)' }} />}
               </div>
             ) : (
               <form onSubmit={saveProfile}>
@@ -233,14 +230,8 @@ export default function DashboardPage() {
                   <div className={`char-counter ${bio.length > 2000 ? 'over' : ''}`}>{bio.length}/2000</div>
                 </div>
                 <div className="form-group">
-                  <label>Аватар</label>
-                  <div className="avatar-grid">
-                    {AVATARS.map(a => (
-                      <div key={a.id} className={`avatar-option ${avatarId === a.id ? 'selected' : ''}`} onClick={() => setAvatarId(a.id)} style={{ background: a.bg }}>
-                        <span className="avatar-emoji">{a.emoji}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <label>Фото (ссылка)</label>
+                  <input className="input" value={photoUrl} onChange={e => setPhotoUrl(e.target.value)} placeholder="https://example.com/photo.jpg" />
                 </div>
                 <button className="btn btn-primary" disabled={saving || distributionDone}>
                   {saving ? 'Сохранение...' : 'Сохранить анкету'}
@@ -254,9 +245,9 @@ export default function DashboardPage() {
             <div className="card">
               <h2 className="card-title">Твой тайный друг</h2>
               <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                <div style={{ background: getAvatar(assignedUser.avatarId).bg, width: 80, height: 80, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 32, border: '2px solid var(--accent-border)' }}>
-                  <span>{getAvatar(assignedUser.avatarId).emoji}</span>
-                </div>
+                {assignedUser.photoUrl && (
+                  <img src={assignedUser.photoUrl} alt="" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-border)', flexShrink: 0 }} />
+                )}
                 <div>
                   <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{assignedUser.fullName}</p>
                   {assignedUser.region && <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 4 }}>Регион: {assignedUser.region}</p>}

@@ -1,6 +1,6 @@
 import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { HashRouter, useNavigate } from 'react-router-dom'
+import { BrowserRouter, useNavigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import App from './App'
 import './styles/global.css'
@@ -19,12 +19,12 @@ function RedirectHandler({ children }: { children: React.ReactNode }) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <HashRouter>
+    <BrowserRouter basename="/tayniy-drug">
       <RedirectHandler>
         <AuthProvider>
           <App />
         </AuthProvider>
       </RedirectHandler>
-    </HashRouter>
+    </BrowserRouter>
   </StrictMode>,
 )
