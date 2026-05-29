@@ -4,6 +4,7 @@ import { HashRouter, useNavigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import App from './App'
 import './styles/global.css'
+import './styles/themes.css'
 
 function RedirectHandler({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
