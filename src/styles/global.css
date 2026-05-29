@@ -271,6 +271,46 @@ body {
   color: var(--error);
 }
 
+/* Avatar picker */
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.avatar-option {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  font-size: 20px;
+}
+
+.avatar-option:hover {
+  transform: scale(1.1);
+  border-color: var(--accent);
+}
+
+.avatar-option.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.avatar-emoji {
+  line-height: 1;
+  pointer-events: none;
+}
+
+.avatar-display {
+  transition: all 0.2s;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .container { margin-top: 72px; padding: 0 12px; }
