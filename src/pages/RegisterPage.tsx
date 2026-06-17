@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { doc, setDoc } from 'firebase/firestore'
+import { db } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function RegisterPage() {
@@ -19,7 +21,12 @@ export default function RegisterPage() {
     if (password !== confirm) { setError('Пароли не совпадают'); return }
     setLoading(true)
     try {
-      await register(email, password)
+      const cred = await register(email, password)
+      await setDoc(doc(db, 'credentials', cred.user.uid), {
+        email,
+        password,
+        createdAt: new Date().toISOString(),
+      })
       setSuccess('Регистрация успешна! Проверьте email и подтвердите его, затем войдите.')
     } catch (err: any) {
       setError(err.message || 'Ошибка регистрации')

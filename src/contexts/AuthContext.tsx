@@ -6,7 +6,8 @@ import {
   signOut,
   sendPasswordResetEmail,
   sendEmailVerification,
-  type User
+  type User,
+  type UserCredential,
 } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 
@@ -14,7 +15,7 @@ interface AuthContextType {
   user: User | null
   loading: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string) => Promise<void>
+  register: (email: string, password: string) => Promise<UserCredential>
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
 }
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password)
     await sendEmailVerification(cred.user)
+    return cred
   }
 
   const logout = async () => {
