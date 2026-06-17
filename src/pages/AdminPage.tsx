@@ -125,7 +125,7 @@ export default function AdminPage() {
     const result: any = {}
     for (const [key, value] of Object.entries(data)) {
       if (value && typeof value === 'object' && '_seconds' in value && '_nanoseconds' in value) {
-        result[key] = new Timestamp(value._seconds, value._nanoseconds)
+        result[key] = new Timestamp(Number(value._seconds), Number(value._nanoseconds))
       } else if (Array.isArray(value)) {
         result[key] = value.map(v => (v !== null && typeof v === 'object' ? deserializeTimestamps(v) : v))
       } else if (value !== null && typeof value === 'object') {
