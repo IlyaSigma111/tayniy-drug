@@ -3,10 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const { login, register } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -15,10 +14,19 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      await login(email, password)
+      await login(email)
       navigate('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Ошибка входа')
+      if (err.code === 'auth/user-not-found') {
+        try {
+          await register(email)
+          navigate('/dashboard')
+        } catch (regErr: any) {
+          setError(regErr.message || 'Ошибка регистрации')
+        }
+      } else {
+        setError(err.message || 'Ошибка входа')
+      }
     }
     setLoading(false)
   }
@@ -30,25 +38,19 @@ export default function LoginPage() {
       </header>
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="card" style={{ width: '100%', maxWidth: 420 }}>
-          <h1 className="card-title">Вход</h1>
+          <h1 className="card-title">Войти</h1>
           {error && <div className="alert alert-error">{error}</div>}
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label>Email</label>
-              <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" required />
-            </div>
-            <div className="form-group">
-              <label>Пароль</label>
-              <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+              <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" required autoFocus />
             </div>
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
-              {loading ? 'Вход...' : 'Войти'}
+              {loading ? 'Загрузка...' : 'Войти'}
             </button>
           </form>
-          <div className="auth-links">
-            <Link to="/reset-password">Забыли пароль?</Link>
-            <br />
-            Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
+          <div className="auth-links" style={{ marginTop: 16 }}>
+            Нет аккаунта? Он создастся автоматически при входе
           </div>
         </div>
       </div>

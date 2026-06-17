@@ -24,9 +24,6 @@ service cloud.firestore {
     match /settings/{doc} {
       allow read, write: if request.auth != null;
     }
-    match /credentials/{userId} {
-      allow read, write: if request.auth != null;
-    }
   }
 }
 ```
